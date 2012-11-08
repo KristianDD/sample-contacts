@@ -1,62 +1,178 @@
-﻿<!DOCTYPE html>
+<<!DOCTYPE html>
 <html>
-  <head>
-  <title></title>
-  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no;" />
-    <meta charset="utf-8">
-
-
-    <!-- iPad/iPhone specific css below, add after your main css >
-    <link rel="stylesheet" media="only screen and (max-device-width: 1024px)" href="ipad.css" type="text/css" />        
-    <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="iphone.css" type="text/css" />        
-    -->
-    <!-- If your application is targeting iOS BEFORE 4.0 you MUST put json2.js from http://www.JSON.org/json2.js into your www directory and include it here -->
-    <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
-    <script type="text/javascript">
-
-
-    // If you want to prevent dragging, uncomment this section
-    /*
-    function preventBehavior(e) 
-    { 
-      e.preventDefault(); 
-    };
-    document.addEventListener("touchmove", preventBehavior, false);
-    */
-    
-    /* If you are supporting your own protocol, the var invokeString will contain any arguments to the app launch.
-    see http://iphonedevelopertips.com/cocoa/launching-your-own-application-via-a-custom-url-scheme.html
-    for more details -jm */
-    /*
-    function handleOpenURL(url)
-    {
-        // TODO: do something with the url passed in.
-    }
-    */
-    
-    function onBodyLoad()
-    {        
-        document.addEventListener("deviceready", onDeviceReady, false);
-    }
-    
-    /* When this function is called, Cordova has been initialized and is ready to roll */
-    /* If you are supporting your own protocol, the var invokeString will contain any arguments to the app launch.
-    see http://iphonedevelopertips.com/cocoa/launching-your-own-application-via-a-custom-url-scheme.html
-    for more details -jm */
-    function onDeviceReady()
-    {
-        // do your thing!
-        navigator.notification.alert("Cordova is working")
-    }
-    
-    </script>
-  </head>
-  <body onload="onBodyLoad()">
-    <h1>Hey, it's Cordova!</h1>
-    <ol>
-        <li>Check your console log for any white-list rejection errors.</li>
-        <li>Add your allowed <strong>hosts</strong> in Cordova.plist/ExternalHosts (wildcards OK, don't enter the URL scheme)</li>
-    </ol>
-  </body>
+    <head>
+        <title>Contacts Sample</title>
+ 
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no;" />
+        <meta charset="utf-8">
+        <style type="text/css">
+            body
+            {
+                font-size: medium;
+                font-family: Verdana;
+            }
+            button
+            {
+                width: auto;
+                height: auto;
+                font-size: large;
+            }
+        </style>
+             
+            <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+        <script type="text/javascript" charset="utf-8">
+     
+            // Create a contact
+            // Find a contact
+            // Clone a contact
+ 
+            document.addEventListener("deviceready", onDeviceReady, false);
+ 
+            function id(element) {
+                return document.getElementById(element);
+            }
+ 
+            function onDeviceReady() {
+                id("createContactButton").addEventListener("click", createContact);
+                id("findContactButton").addEventListener("click", findContact);
+                id("cloneContactButton").addEventListener("click", cloneContact);
+            }
+ 
+            // Maintain global reference to new contact.
+            var contact;
+ 
+            function setResults(value) {
+                if (!value) {
+                    id("results").innerHTML = "";
+                }
+                else {
+                    id("results").innerHTML += value;
+                }
+            }
+             
+            function clearResults() {
+                id("results").innerHTML = "";
+            }
+             
+ 
+            function createContact() {
+                setResults();
+                 
+                // This code will create a new contact, even if
+                // you have already run this code. It will lose its reference
+                // to the original contact, and retrieve a reference to a new one.
+                // When you click the Delete Contact button, the code will delete only
+                // the one contact referred to by the variable contact.
+                 
+                contact = navigator.contacts.create();
+                var name = new ContactName();
+                name.givenName = "John";
+                name.familyName = "Smith";
+                contact.name = name;
+ 
+                // Create a single address for the contact.
+                var addresses = [1];               
+                var address = new ContactAddress();
+                address.type = "Home";
+                address.streetAddress = "12345 Smith St.";
+                address.locality = "Smithville";
+                address.region = "CA";
+                address.postalCode = "99999";
+                address.country = "United States of America";
+                addresses[0] = address;
+                contact.addresses = addresses;
+   
+                // Create three phone numbers for the contact.
+                var phoneNumbers = [3];
+                phoneNumbers[0] = new ContactField('work', '212-555-1212', false);
+                phoneNumbers[1] = new ContactField('mobile', '530-555-1212', false);
+                phoneNumbers[2] = new ContactField('home', '718-555-1212', true); // the preferred number
+                contact.phoneNumbers = phoneNumbers;
+                 
+                // Create two emails for the contact.
+                var emails = [2];
+                emails[0] = new ContactField('home', 'john.smith@smith.com', false);
+                emails[1] = new ContactField('work', 'john.smith@work.com', true);
+                contact.emails = emails;
+                
+                contact.save(onSaveSuccess, onSaveError);
+            }
+     
+            function onSaveSuccess(contact) {
+                setResults(
+                    "Contact saved successfully. Look in Address Book to view the contact:<br/>" +
+                    contact.name.givenName + " " + contact.name.familyName);
+            }
+ 
+            function onSaveError(contactError) {
+                setResults("Save error = " + contactError.code);
+            }
+             
+            function findContact() {
+                // Find all contacts containing the name Smith.
+                // Once you have clicked the Create Contact button,
+                // your contacts should contain at least one contact named Smith.
+ 
+                var options = new ContactFindOptions();
+                // Search for the name Smith, allowing multiple matches.
+                var fields = ["name"];
+                options.filter = "Smith";
+                options.multiple = 1;
+                navigator.contacts.find(fields, onFindSuccess, onFindFailure, options);
+            }
+ 
+            function onFindSuccess(contacts) {
+                setResults();
+                // Display the results.
+                setResults("</br>Found " + contacts.length + " contact" + (contacts.length === 1 ? "."  : "s."));
+                for(var i = 0; i < contacts.length; i++) {
+                    var contact = contacts[i];
+                    setResults("<br/>Found: " + contact.name.givenName + " " +
+                        contact.name.familyName + " (id = " + contact.id + ")");
+                }
+            }
+             
+            function onFindFailure(contactError) {
+                setResults("Find error = " + contactError.code);
+            }
+ 
+            function cloneContact() {
+                setResults();
+                 
+                if (!contact) {
+                    setResults(
+                        "</br>Contact hasn't yet been set." +
+                        "</br>Click 'Create New Contact' first.");
+                }
+                else {
+                    var clone = contact.clone();
+                    clone.name.givenName = "Jane";
+                    clone.emails[0].value = "jane.smith@smith.com";
+                 
+                    setResults("Cloned contact:<br/>" +
+                        "Name: " + clone.name.givenName + " " + clone.name.familyName + "<br/>" +
+                        "Email: " + clone.emails[0].value + "<br/>" +
+                        "Address: " + clone.addresses[0].streetAddress + "<br/>" +
+                        "<br/>" +
+                        "Note that the clone hasn't been saved, and won't appear in your address book."
+                        );                   
+                }
+            }
+     
+ 
+        </script>
+    </head>
+    <body>
+        <h1>Contacts Sample</h1>
+        <div>
+            <button id="createContactButton">Create New Contact</button>
+        </div>
+        <div>
+            <button id="findContactButton">Find Contact</button>
+        </div>
+        <div>
+            <button id="cloneContactButton">Clone Contact</button>
+        </div>
+        <div id="results"></div>
+    </body>
 </html>
