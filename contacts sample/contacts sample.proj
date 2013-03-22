@@ -6,10 +6,15 @@
     <AppIdentifier>com.telerik.contacts_sample</AppIdentifier>
     <ProjectName>contacts sample</ProjectName>
     <IsRunnable>true</IsRunnable>
-    <TemplateAppName>Cordova200</TemplateAppName>
-    <AndroidPermissions>android.permission.CAMERA;android.permission.VIBRATE;android.permission.ACCESS_COARSE_LOCATION;android.permission.ACCESS_FINE_LOCATION;android.permission.ACCESS_LOCATION_EXTRA_COMMANDS;android.permission.READ_PHONE_STATE;android.permission.INTERNET;android.permission.RECEIVE_SMS;android.permission.RECORD_AUDIO;android.permission.MODIFY_AUDIO_SETTINGS;android.permission.READ_CONTACTS;android.permission.WRITE_CONTACTS;android.permission.WRITE_EXTERNAL_STORAGE;android.permission.ACCESS_NETWORK_STATE</AndroidPermissions>
+    <TemplateAppName>Cordova240</TemplateAppName>
+    <AndroidPermissions>android.permission.CAMERA;android.permission.VIBRATE;android.permission.ACCESS_COARSE_LOCATION;android.permission.ACCESS_FINE_LOCATION;android.permission.ACCESS_LOCATION_EXTRA_COMMANDS;android.permission.READ_PHONE_STATE;android.permission.INTERNET;android.permission.RECEIVE_SMS;android.permission.RECORD_AUDIO;android.permission.MODIFY_AUDIO_SETTINGS;android.permission.READ_CONTACTS;android.permission.WRITE_CONTACTS;android.permission.WRITE_EXTERNAL_STORAGE;android.permission.ACCESS_NETWORK_STATE;android.permission.ACCOUNT_MANAGER;android.permission.GET_ACCOUNTS;android.permission.MANAGE_ACCOUNTS;android.permission.BROADCAST_STICKY;android.permission.GET_TASKS;android.permission.WAKE_LOCK</AndroidPermissions>
     <DeviceOrientations>Portrait;Landscape</DeviceOrientations>
     <iOSStatusBarStyle>Default</iOSStatusBarStyle>
+    <BundleVersion>1.0</BundleVersion>
+    <iOSDisplayName />
+    <iOSDeviceFamily>1;2</iOSDeviceFamily>
+    <AndroidVersionCode>1</AndroidVersionCode>
+    <AndroidHardwareAcceleration>false</AndroidHardwareAcceleration>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="App_Resources" />
@@ -28,6 +33,9 @@
     <Folder Include="App_Resources\Android\drawable-ldpi">
       <Platform>Android</Platform>
     </Folder>
+    <Folder Include="styles" />
+    <Folder Include="styles\img" />
+    <Folder Include="scripts" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="App_Resources\iOS\Default-568h@2x.png" />
@@ -52,6 +60,11 @@
     <Resource Include="App_Resources\Android\drawable-ldpi\icon.png" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="styles\img\background.png" />
+    <Content Include="styles\img\footer-background.png" />
+    <Content Include="styles\img\header.png" />
+    <Content Include="styles\img\logo.png" />
+    <Content Include="styles\main.css" />
     <Content Include="index.html" />
     <Content Include="cordova.ios.js">
       <Platform>iOS</Platform>
@@ -61,6 +74,7 @@
       <Platform>Android</Platform>
       <TargetName>cordova.js</TargetName>
     </Content>
+    <Content Include="scripts\main.js" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Telerik\ICE\Tools\Mobile\MobileTools.targets" />
 </Project>
