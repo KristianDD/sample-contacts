@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ProjectGuid>87c3a30a-b6a9-4951-9a78-f0848ff0463f</ProjectGuid>
     <ProjectTypeGuids>{070BCB52-5A75-4F8C-A973-144AF0EAFCC9}</ProjectTypeGuids>
-    <AppIdentifier>com.telerik.contacts_sample</AppIdentifier>
+    <AppIdentifier>com.telerik.contactssample</AppIdentifier>
     <ProjectName>contacts sample</ProjectName>
     <IsRunnable>true</IsRunnable>
     <TemplateAppName>Cordova240</TemplateAppName>
@@ -15,6 +15,7 @@
     <iOSDeviceFamily>1;2</iOSDeviceFamily>
     <AndroidVersionCode>1</AndroidVersionCode>
     <AndroidHardwareAcceleration>false</AndroidHardwareAcceleration>
+    <iOSBackgroundMode />
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="App_Resources" />
