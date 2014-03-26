@@ -1,4 +1,4 @@
-// Platform: ios
+﻿// Platform: windowsphone
 // 3.2.0
 /*
  Licensed to the Apache Software Foundation (ASF) under one
@@ -792,235 +792,56 @@ module.exports = channel;
 
 });
 
-// file: lib/ios/exec.js
+// file: lib/windowsphone/exec.js
 define("cordova/exec", function(require, exports, module) {
 
+var cordova = require('cordova');
+
 /**
- * Creates a gap bridge iframe used to notify the native code about queued
- * commands.
+ * Execute a cordova command.  It is up to the native side whether this action
+ * is synchronous or asynchronous.  The native side can return:
+ *      Synchronous: PluginResult object as a JSON string
+ *      Asynchronous: Empty string ""
+ * If async, the native side will cordova.callbackSuccess or cordova.callbackError,
+ * depending upon the result of the action.
  *
- * @private
+ * @param {Function} success    The success callback
+ * @param {Function} fail       The fail callback
+ * @param {String} service      The name of the service to use
+ * @param {String} action       Action to be run in cordova
+ * @param {String[]} [args]     Zero or more arguments to pass to the method
+
  */
-var cordova = require('cordova'),
-    channel = require('cordova/channel'),
-    utils = require('cordova/utils'),
-    base64 = require('cordova/base64'),
-    jsToNativeModes = {
-        IFRAME_NAV: 0,
-        XHR_NO_PAYLOAD: 1,
-        XHR_WITH_PAYLOAD: 2,
-        XHR_OPTIONAL_PAYLOAD: 3
-    },
-    bridgeMode,
-    execIframe,
-    execXhr,
-    requestCount = 0,
-    vcHeaderValue = null,
-    commandQueue = [], // Contains pending JS->Native messages.
-    isInContextOfEvalJs = 0;
 
-function createExecIframe() {
-    var iframe = document.createElement("iframe");
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    return iframe;
-}
+module.exports = function(success, fail, service, action, args) {
 
-function shouldBundleCommandJson() {
-    if (bridgeMode == jsToNativeModes.XHR_WITH_PAYLOAD) {
-        return true;
+    var callbackId = service + cordova.callbackId++;
+    if (typeof success == "function" || typeof fail == "function") {
+        cordova.callbacks[callbackId] = {success:success, fail:fail};
     }
-    if (bridgeMode == jsToNativeModes.XHR_OPTIONAL_PAYLOAD) {
-        var payloadLength = 0;
-        for (var i = 0; i < commandQueue.length; ++i) {
-            payloadLength += commandQueue[i].length;
-        }
-        // The value here was determined using the benchmark within CordovaLibApp on an iPad 3.
-        return payloadLength < 4500;
-    }
-    return false;
-}
-
-function massageArgsJsToNative(args) {
-    if (!args || utils.typeName(args) != 'Array') {
-        return args;
-    }
-    var ret = [];
-    args.forEach(function(arg, i) {
-        if (utils.typeName(arg) == 'ArrayBuffer') {
-            ret.push({
-                'CDVType': 'ArrayBuffer',
-                'data': base64.fromArrayBuffer(arg)
-            });
-        } else {
-            ret.push(arg);
-        }
-    });
-    return ret;
-}
-
-function massageMessageNativeToJs(message) {
-    if (message.CDVType == 'ArrayBuffer') {
-        var stringToArrayBuffer = function(str) {
-            var ret = new Uint8Array(str.length);
-            for (var i = 0; i < str.length; i++) {
-                ret[i] = str.charCodeAt(i);
-            }
-            return ret.buffer;
-        };
-        var base64ToArrayBuffer = function(b64) {
-            return stringToArrayBuffer(atob(b64));
-        };
-        message = base64ToArrayBuffer(message.data);
-    }
-    return message;
-}
-
-function convertMessageToArgsNativeToJs(message) {
-    var args = [];
-    if (!message || !message.hasOwnProperty('CDVType')) {
-        args.push(message);
-    } else if (message.CDVType == 'MultiPart') {
-        message.messages.forEach(function(e) {
-            args.push(massageMessageNativeToJs(e));
-        });
-    } else {
-        args.push(massageMessageNativeToJs(message));
-    }
-    return args;
-}
-
-function iOSExec() {
-    // XHR mode does not work on iOS 4.2, so default to IFRAME_NAV for such devices.
-    // XHR mode's main advantage is working around a bug in -webkit-scroll, which
-    // doesn't exist in 4.X devices anyways.
-    if (bridgeMode === undefined) {
-        bridgeMode = navigator.userAgent.indexOf(' 4_') == -1 ? jsToNativeModes.XHR_NO_PAYLOAD : jsToNativeModes.IFRAME_NAV;
-    }
-
-    var successCallback, failCallback, service, action, actionArgs, splitCommand;
-    var callbackId = null;
-    if (typeof arguments[0] !== "string") {
-        // FORMAT ONE
-        successCallback = arguments[0];
-        failCallback = arguments[1];
-        service = arguments[2];
-        action = arguments[3];
-        actionArgs = arguments[4];
-
-        // Since we need to maintain backwards compatibility, we have to pass
-        // an invalid callbackId even if no callback was provided since plugins
-        // will be expecting it. The Cordova.exec() implementation allocates
-        // an invalid callbackId and passes it even if no callbacks were given.
-        callbackId = 'INVALID';
-    } else {
-        // FORMAT TWO, REMOVED
-        try {
-            splitCommand = arguments[0].split(".");
-            action = splitCommand.pop();
-            service = splitCommand.join(".");
-            actionArgs = Array.prototype.splice.call(arguments, 1);
-
-            console.log('The old format of this exec call has been removed (deprecated since 2.1). Change to: ' +
-                       "cordova.exec(null, null, \"" + service + "\", \"" + action + "\"," + JSON.stringify(actionArgs) + ");"
-            );
-            return;
-        } catch (e) {}
-    }
-
-    // Register the callbacks and add the callbackId to the positional
-    // arguments if given.
-    if (successCallback || failCallback) {
-        callbackId = service + cordova.callbackId++;
-        cordova.callbacks[callbackId] =
-            {success:successCallback, fail:failCallback};
-    }
-
-    actionArgs = massageArgsJsToNative(actionArgs);
-
-    var command = [callbackId, service, action, actionArgs];
-
-    // Stringify and queue the command. We stringify to command now to
-    // effectively clone the command arguments in case they are mutated before
-    // the command is executed.
-    commandQueue.push(JSON.stringify(command));
-
-    // If we're in the context of a stringByEvaluatingJavaScriptFromString call,
-    // then the queue will be flushed when it returns; no need for a poke.
-    // Also, if there is already a command in the queue, then we've already
-    // poked the native side, so there is no reason to do so again.
-    if (!isInContextOfEvalJs && commandQueue.length == 1) {
-        if (bridgeMode != jsToNativeModes.IFRAME_NAV) {
-            // This prevents sending an XHR when there is already one being sent.
-            // This should happen only in rare circumstances (refer to unit tests).
-            if (execXhr && execXhr.readyState != 4) {
-                execXhr = null;
-            }
-            // Re-using the XHR improves exec() performance by about 10%.
-            execXhr = execXhr || new XMLHttpRequest();
-            // Changing this to a GET will make the XHR reach the URIProtocol on 4.2.
-            // For some reason it still doesn't work though...
-            // Add a timestamp to the query param to prevent caching.
-            execXhr.open('HEAD', "/!gap_exec?" + (+new Date()), true);
-            if (!vcHeaderValue) {
-                vcHeaderValue = /.*\((.*)\)/.exec(navigator.userAgent)[1];
-            }
-            execXhr.setRequestHeader('vc', vcHeaderValue);
-            execXhr.setRequestHeader('rc', ++requestCount);
-            if (shouldBundleCommandJson()) {
-                execXhr.setRequestHeader('cmds', iOSExec.nativeFetchMessages());
-            }
-            execXhr.send(null);
-        } else {
-            execIframe = execIframe || createExecIframe();
-            execIframe.src = "gap://ready";
+    // generate a new command string, ex. DebugConsole/log/DebugConsole23/["wtf dude?"]
+    for(var n = 0; n < args.length; n++)
+    {
+        if(typeof args[n] !== "string")
+        {
+            args[n] = JSON.stringify(args[n]);
         }
     }
-}
-
-iOSExec.jsToNativeModes = jsToNativeModes;
-
-iOSExec.setJsToNativeBridgeMode = function(mode) {
-    // Remove the iFrame since it may be no longer required, and its existence
-    // can trigger browser bugs.
-    // https://issues.apache.org/jira/browse/CB-593
-    if (execIframe) {
-        execIframe.parentNode.removeChild(execIframe);
-        execIframe = null;
-    }
-    bridgeMode = mode;
-};
-
-iOSExec.nativeFetchMessages = function() {
-    // Each entry in commandQueue is a JSON string already.
-    if (!commandQueue.length) {
-        return '';
-    }
-    var json = '[' + commandQueue.join(',') + ']';
-    commandQueue.length = 0;
-    return json;
-};
-
-iOSExec.nativeCallback = function(callbackId, status, message, keepCallback) {
-    return iOSExec.nativeEvalAndFetch(function() {
-        var success = status === 0 || status === 1;
-        var args = convertMessageToArgsNativeToJs(message);
-        cordova.callbackFromNative(callbackId, success, status, args, keepCallback);
-    });
-};
-
-iOSExec.nativeEvalAndFetch = function(func) {
-    // This shouldn't be nested, but better to be safe.
-    isInContextOfEvalJs++;
+    var command = service + "/" + action + "/" + callbackId + "/" + JSON.stringify(args);
+    // pass it on to Notify
     try {
-        func();
-        return iOSExec.nativeFetchMessages();
-    } finally {
-        isInContextOfEvalJs--;
+        if(window.external) {
+            window.external.Notify(command);
+        }
+        else {
+            console.log("window.external not available :: command=" + command);
+        }
+    }
+    catch(e) {
+        console.log("Exception calling native with command :: " + command + " :: exception=" + e);
     }
 };
 
-module.exports = iOSExec;
 
 });
 
@@ -1269,16 +1090,22 @@ exports.reset();
 
 });
 
-// file: lib/ios/platform.js
+// file: lib/windowsphone/platform.js
 define("cordova/platform", function(require, exports, module) {
 
 module.exports = {
-    id: 'ios',
+    id: 'windowsphone',
     bootstrap: function() {
-        require('cordova/channel').onNativeReady.fire();
+        var cordova = require('cordova'),
+               exec = require('cordova/exec');
+
+        // Inject a listener for the backbutton, and tell native to override the flag (true/false) when we have 1 or more, or 0, listeners
+        var backButtonChannel = cordova.addDocumentEventHandler('backbutton');
+        backButtonChannel.onHasSubscribersChange = function() {
+            exec(null, null, "CoreEvents", "overridebackbutton", [this.numHandlers == 1]);
+        };
     }
 };
-
 
 });
 

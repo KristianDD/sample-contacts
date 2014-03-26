@@ -15,12 +15,17 @@
 			<h1>Contacts Sample</h1>
 		</header>
         <div class="content">
-            <div>
-                <button class="button big" id="createContactButton">Create New Contact</button>
-                <button class="button big" id="findContactButton">Find Contact</button>
-                <button class="button big" id="cloneContactButton">Clone Contact</button>
+            <div class="action-area ch50">
+                <button class="button dh" id="createContactButton">Create New Contact</button>
+                <button class="button dh" id="findContactButton">Find Contact</button>
+                <button class="button dh" id="cloneContactButton">Clone Contact</button>
+			</div>
+            <div class="result-area ch50">
+                <div class="results">
+                    <div id="result" class="desc" type="text" readonly="readonly"></div>
+                </div>
+                <div class="separator"></div>
             </div>
-            <div id="result" type="text" readonly="readonly"></div>
         </div>
         <footer class="footer">
 			<div>Cordova API Samples</div>
